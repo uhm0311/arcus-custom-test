@@ -1,14 +1,14 @@
 #define POOL_SIZE 100
-#define SERVER_COUNT 1600
-#define LOOP 1
-#define USE_REPLICATION 1
+#define SERVER_COUNT 10
+#define LOOP 4
+#define USE_REPLICATION 0
 #define RANDOM_RGROUPNAME 0
 #define PRINT_POOL 0
 #define WARM_UP 0
 #define DO_REPOPULATE 0
-#define HASH_COLLISION 1
+#define HASH_COLLISION 0
 #define DO_UPDATE_SERVERLIST 1
-#define GROUPNAME_SIZE 20
+#define GROUPNAME_SIZE 100
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -87,11 +87,7 @@ void init_master_serverlist()
   if (serverinfo) {
     free(serverinfo);
   }
-#if HASH_COLLISION
   servercount = SERVER_COUNT;
-#else
-  servercount = SERVER_COUNT + rand() % max(SERVER_COUNT / 10, 2);
-#endif
   serverinfo = (memcached_server_info_st *)(malloc(sizeof(memcached_server_info_st) * servercount));
 
   free_groupnames();
@@ -111,7 +107,7 @@ void init_master_serverlist()
   {
     serverinfo[i].groupname = groupnames[i];
     serverinfo[i].master = true;
-    serverinfo[i + 1].groupname = groupnames[i + 1];
+    serverinfo[i + 1].groupname = groupnames[i];
     serverinfo[i + 1].master = false;
     
     serverinfo[i].hostname = "localhost";
@@ -157,11 +153,16 @@ int main(int argc __attribute__((unused)), char **argv __attribute__((unused)))
       break;
     }
 #if HASH_COLLISION
+    memcached_behavior_set(global_mc, MEMCACHED_BEHAVIOR_SORT_HOSTS, 1);
     memcached_behavior_set(global_mc, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED, 1);
     memcached_behavior_set(global_mc, MEMCACHED_BEHAVIOR_DISTRIBUTION, MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA_SPY);
     memcached_behavior_set_key_hash(global_mc, MEMCACHED_HASH_MD5);
 #endif
 #if USE_REPLICATION
+    memcached_behavior_set(global_mc, MEMCACHED_BEHAVIOR_SORT_HOSTS, 1);
+    memcached_behavior_set(global_mc, MEMCACHED_BEHAVIOR_KETAMA_WEIGHTED, 1);
+    memcached_behavior_set(global_mc, MEMCACHED_BEHAVIOR_DISTRIBUTION, MEMCACHED_DISTRIBUTION_CONSISTENT_KETAMA_SPY);
+    memcached_behavior_set_key_hash(global_mc, MEMCACHED_HASH_MD5);
     memcached_enable_replication(global_mc);
 #endif
 

@@ -24,7 +24,7 @@
 
 #include "libmemcached/memcached.h"
 
-#define USE_REPLICATION 1
+#define USE_REPLICATION 0
 
 #if USE_REPLICATION
 static const char *zkadmin_addr = "jam2in-s003:2181,jam2in-s004:2181,jam2in-s005:2181";
@@ -36,13 +36,13 @@ static const char *service_code = "test";
 #define NUM_OF_CHILDREN 10
 #define NUM_OF_PIPED_ITEMS 100
 #define NUM_OF_USERS 10
-#define LOOP 100
+#define LOOP 1
 
 #define SAMPLE_PIPE  1
 #define SAMPLE_MGET  0
 #define SAMPLE_MGET2 0
 
-#define USE_MC_POOL 1
+//#define USE_MC_POOL 1
 
 static inline bool is_failed(memcached_return_t rc)
 {
@@ -57,18 +57,19 @@ static inline void process_child(memcached_st *proxy_mc)
   memcached_st *mc;
   memcached_st *master_mc = memcached_create(NULL);
   memcached_pool_st *pool = memcached_pool_create(master_mc, NUM_OF_CHILDREN/2, NUM_OF_CHILDREN);
-  arcus_proxy_connect(master_mc, pool, proxy_mc);
+  arcus_proxy_connect(NULL, pool, proxy_mc);
 #else
   memcached_st *mc = memcached_create(NULL);
   arcus_proxy_connect(mc, NULL, proxy_mc);
 #endif
 
   memcached_return_t rc;
+  uint32_t my;
   int userid, i;
   int pid = getpid();
   sleep(1);
 
-  for (uint32_t my = 0; my < LOOP; my++)
+  for (my = 0; my < LOOP; my++)
   {
     for (userid=0; userid<NUM_OF_USERS; userid++) {
 #ifdef USE_MC_POOL
